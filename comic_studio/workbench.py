@@ -29,14 +29,14 @@ def page(title, content):
 <main class="wrap">{content}</main></body></html>"""
 
 
-def home(projects):
+def home(projects, mode="本地模拟生成"):
     links = "".join(f'<li><a href="/projects/{h(key)}">{h(name)}</a></li>' for key, name in projects)
     return page("项目", f"""<h1>创作项目</h1><div class="home-grid"><section><h2>新建一集</h2>
 <form action="/projects" method="post"><label>片名<input name="title" required value="明天的来信"></label>
 <label>故事原文<textarea name="story" rows="7" required>{h(SAMPLE)}</textarea></label>
 <button>拆成分场剧本</button></form></section><section><h2>继续创作</h2>
 {f'<ul>{links}</ul>' if links else '<p>新建项目后，可在这里继续上次的审核。</p>'}
-<p class="muted">本地演示使用模拟生成工具。终审后可下载含字幕和素材版本的剪辑清单。</p></section></div>""")
+<p class="muted">当前模式为{h(mode)}。终审后可下载含字幕和素材版本的剪辑清单。</p></section></div>""")
 
 
 def field(label, name, value, area=False, numeric=False):
@@ -75,9 +75,16 @@ def preview(view):
         return f'<ol class="script">{lines}</ol>'
     if step.kind in {"character", "scene"}:
         refs = "".join(f'<li><code>{h(uri)}</code></li>' for uri in data["references"])
-        return f'<h3>{h(data["name"])}</h3><p>{h(data["description"])}</p><details><summary>参考图地址</summary><ul>{refs}</ul></details>'
+        images = "".join(f'<img class="media" src="{h(u)}" alt="参考图">' for u in data["references"] if u.startswith("https://"))
+        return f'{images}<h3>{h(data["name"])}</h3><p>{h(data["description"])}</p><details><summary>参考图地址</summary><ul>{refs}</ul></details>'
     if step.kind == "board":
         return f'<blockquote>{h(data["action"])}</blockquote><p>{data["seconds"]} 秒 · 对白　{h(data["dialogue"]) or "无"}</p>'
+    uri = data.get("uri", "")
+    if isinstance(uri, str) and uri.startswith("https://"):
+        if step.kind == "frame":
+            return f'<img class="media" src="{h(uri)}" alt="镜头关键帧">'
+        if step.kind == "clip":
+            return f'<video class="media" controls preload="metadata" src="{h(uri)}"></video><p><a href="{h(uri)}">打开视频文件</a></p>'
     if step.kind == "frame":
         return f'<blockquote>{h(data.get("composition", ""))}</blockquote><p>关键帧占位预览 · {h(data.get("aspect_ratio", "待检查"))}</p>'
     if step.kind == "clip":
@@ -90,7 +97,7 @@ def preview(view):
             f'<th>镜头</th><th>时间段</th><th>视频版本</th><th>字幕</th></tr></thead><tbody>{rows}</tbody></table>')
 
 
-def project_page(project, revision, selected=None):
+def project_page(project, revision, selected=None, mode="本地模拟生成"):
     nodes = inspect(project)
     if selected not in nodes:
         selected = next((key for key, v in nodes.items() if v.ready and v.state != "approved"), "timeline")
@@ -147,7 +154,7 @@ def project_page(project, revision, selected=None):
         history.append(f'<li><b>v{old["version"]}</b>　{details}<small>{h(old["created_at"])} · {h(old["task"]["id"])}</small></li>')
     approved = sum(v.state == "approved" for v in nodes.values())
     label = f' v{version["version"]}' if version else ""
-    main = (f'<a href="/">所有项目</a><h1>{h(project["title"])}</h1><p class="muted">{approved} / {len(nodes)} 项已确认 · 本地模拟生成</p>'
+    main = (f'<a href="/">所有项目</a><h1>{h(project["title"])}</h1><p class="muted">{approved} / {len(nodes)} 项已确认 · {h(mode)}</p>'
             f'<div class="layout"><nav aria-label="制作步骤">{"".join(menu)}</nav><section><div class="stage">'
             f'<h2>{h(view.step.title)}{label}</h2><span class="{view.state}">{STATES[view.state]}</span></div>'
             f'{warnings}{preview(view)}{sources}<div class="actions">{"".join(actions)}</div>'

@@ -35,6 +35,7 @@ def edited_data(kind, form):
 
 def create_app(store, tools=None):
     tools = tools or StudioTools()
+    mode = getattr(tools.media, "label", "本地模拟生成")
 
     def app(env, start_response):
         def reply(status, body="", kind="text/html; charset=utf-8", headers=()):
@@ -56,7 +57,7 @@ def create_app(store, tools=None):
             if (method, path) == ("GET", "/studio.css"):
                 return reply("200 OK", CSS.read_text(encoding="utf-8"), "text/css; charset=utf-8")
             if (method, path) == ("GET", "/"):
-                return reply("200 OK", workbench.home(store.list_projects()))
+                return reply("200 OK", workbench.home(store.list_projects(), mode))
             if (method, path) == ("POST", "/projects"):
                 form = parse_form(env)
                 project = create_project(form.get("title", ""), form.get("story", ""), tools)
@@ -73,7 +74,7 @@ def create_app(store, tools=None):
             back = "/projects/" + pid
             if method == "GET" and not endpoint:
                 selected = parse_qs(env.get("QUERY_STRING", "")).get("step", [None])[0]
-                return reply("200 OK", workbench.project_page(project, revision, selected))
+                return reply("200 OK", workbench.project_page(project, revision, selected, mode))
             if method == "GET" and endpoint == "/timeline.json":
                 output = json.dumps(export_manifest(project), ensure_ascii=False, indent=2)
                 return reply("200 OK", output, "application/json; charset=utf-8",

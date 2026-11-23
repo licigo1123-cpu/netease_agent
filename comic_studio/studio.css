@@ -43,3 +43,4 @@ table { width: 100%; border-collapse: collapse; }
 code, p, li, td { overflow-wrap: anywhere; }
 .story { white-space: pre-wrap; }
 @media (max-width: 720px) { .home-grid, .layout { grid-template-columns: 1fr; } nav { max-height: 220px; overflow: auto; } }
+.media { display: block; max-width: 100%; max-height: 65vh; margin: 1em auto; }

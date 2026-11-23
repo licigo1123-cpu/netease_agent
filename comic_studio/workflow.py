@@ -148,6 +148,8 @@ def generate(project, key, tools=None):
             "description": "待定稿的外貌与服装" if step.kind == "character" else "待定稿的空间与光线",
             "references": [f"mock://{task_id}/{angle}" for angle in angles],
         }
+        if hasattr(tools.media, "reference_image"):
+            data["references"] = [tools.media.reference_image(step.kind, data, project["story"])]
     elif step.kind == "board":
         data = {name: step.seed[name] for name in ("action", "dialogue", "seconds")}
         if view.current and view.current["sources"]["script"] == view.pins["script"]:
